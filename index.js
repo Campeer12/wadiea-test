@@ -1,16 +1,13 @@
-const TelegramBot = require('node-telegram-bot-api');
+const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-// استبدل هذا بالرمز الخاص بالبوت الخاص بك
-const token = 'YOUR_TELEGRAM_BOT_TOKEN';
-
-// إنشاء البوت
-const bot = new TelegramBot(token, { polling: true });
-
-// وظيفة لجلب معلومات المنتجات من علي إكسبريس
-const fetchProducts = async (searchQuery) => {
+app.get('/api/products', async (req, res) => {
+    const searchQuery = req.query.search;
     const url = `https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(searchQuery)}`;
+
     try {
         const { data } = await axios.get(url);
         const $ = cheerio.load(data);
@@ -27,31 +24,13 @@ const fetchProducts = async (searchQuery) => {
             products.push(product);
         });
 
-        return products;
+        res.json(products);
     } catch (error) {
         console.error(error);
-        return [];
-    }
-};
-
-// التعامل مع أوامر البوت
-bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, "Welcome! Send me a product name to search on AliExpress.");
-});
-
-bot.on('message', async (msg) => {
-    const chatId = msg.chat.id;
-    const searchQuery = msg.text;
-
-    const products = await fetchProducts(searchQuery);
-
-    if (products.length > 0) {
-        products.slice(0, 5).forEach(product => {
-            bot.sendMessage(chatId, `*Title:* ${product.title}\n*Price:* ${product.price}\n[Link](${product.link})`, { parse_mode: 'Markdown' });
-        });
-    } else {
-        bot.sendMessage(chatId, 'No products found.');
+        res.status(500).json({ error: 'Failed to fetch products from AliExpress' });
     }
 });
 
-console.log('Bot is running...');
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
