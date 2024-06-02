@@ -1,5 +1,6 @@
-const TelegramBot = require('node-telegram-bot-api');
+const express = require('express');
 const axios = require('axios');
+<<<<<<< HEAD
 
 // استبدل هذا بالرمز الخاص بالبوت الخاص بك
 const token = '7258038220:AAEpKmUpwpLbz4MIoxFlOru2QcETLL9c68k';
@@ -31,7 +32,39 @@ bot.on('message', async (msg) => {
     } catch (error) {
         console.error(error);
         bot.sendMessage(chatId, 'Error fetching products.');
+=======
+const cheerio = require('cheerio');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/api/products', async (req, res) => {
+    const searchQuery = req.query.search;
+    const url = `https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(searchQuery)}`;
+
+    try {
+        const { data } = await axios.get(url);
+        const $ = cheerio.load(data);
+
+        let products = [];
+        
+        $('div._3t7zg').each((index, element) => {
+            const product = {
+                title: $(element).find('a._3t7zg').text().trim(),
+                price: $(element).find('span._1vC4OE').text().trim(),
+                link: $(element).find('a._3t7zg').attr('href'),
+                image: $(element).find('img._3t7zg').attr('src')
+            };
+            products.push(product);
+        });
+
+        res.json(products);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch products from AliExpress' });
+>>>>>>> 300631df487814b1113083a54dc18aaf1817fc7f
     }
 });
 
-console.log('Bot is running...');
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
